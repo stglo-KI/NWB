@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  LOCKED
+}
+
+enum EntryType {
+  METER_READING
+  CONSUMPTION
+}
+
+enum BillingStatus {
+  DRAFT
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id               String     @id @default(cuid())
+  email            String     @unique
+  passwordHash     String
+  role             Role       @default(USER)
+  status           UserStatus @default(ACTIVE)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  profile          CustomerProfile?
+  meterEntries     MeterEntry[]
+  installments     Installment[]
+  invoices         Invoice[]
+}
+
+model CustomerProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  firstName    String
+  lastName     String
+  address      String
+  objectName   String?
+  customerNumber String?
+  connectionId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MeterEntry {
+  id          String      @id @default(cuid())
+  userId      String
+  date        DateTime
+  value       Float
+  entryType   EntryType   @default(METER_READING)
+  comment     String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+model Installment {
+  id          String    @id @default(cuid())
+  userId      String
+  amount      Float
+  validFrom   DateTime
+  validTo     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, validFrom])
+}
+
+model Tariff {
+  id            String    @id @default(cuid())
+  name          String
+  validFrom     DateTime
+  validTo       DateTime?
+  energyPrice   Float
+  basePrice     Float     @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([validFrom])
+}
+
+model BillingPeriod {
+  id          String        @id @default(cuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  status      BillingStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  controlReadings ControlReading[]
+  invoices       Invoice[]
+}
+
+model ControlReading {
+  id              String         @id @default(cuid())
+  billingPeriodId String
+  date            DateTime
+  value           Float
+  comment         String?
+  createdAt       DateTime       @default(now())
+
+  billingPeriod   BillingPeriod  @relation(fields: [billingPeriodId], references: [id], onDelete: Cascade)
+
+  @@index([billingPeriodId])
+}
+
+model Invoice {
+  id              String         @id @default(cuid())
+  billingPeriodId String
+  userId          String
+  consumption     Float
+  energyCosts     Float
+  baseCosts       Float
+  totalCosts      Float
+  installmentsSum Float
+  balance         Float
+  frozenData      Json
+  createdAt       DateTime       @default(now())
+
+  billingPeriod   BillingPeriod  @relation(fields: [billingPeriodId], references: [id], onDelete: Cascade)
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([billingPeriodId, userId])
+  @@index([userId])
+}
