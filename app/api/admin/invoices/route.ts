@@ -12,9 +12,13 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const billingPeriodId = searchParams.get('billingPeriodId')
+  const userId = searchParams.get('userId')
 
   const invoices = await prisma.invoice.findMany({
-    where: billingPeriodId ? { billingPeriodId } : undefined,
+    where: {
+      ...(billingPeriodId ? { billingPeriodId } : {}),
+      ...(userId ? { userId } : {}),
+    },
     include: {
       user: { include: { profile: true } },
       billingPeriod: true,

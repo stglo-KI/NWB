@@ -48,21 +48,49 @@ export async function POST(request: Request) {
     const body = await request.json()
     const data = meterEntrySchema.parse(body)
 
-    const lastEntry = await prisma.meterEntry.findFirst({
-      where: { userId: session.user.id },
-      orderBy: { date: 'desc' }
-    })
+    const newDate = new Date(data.date)
 
-    if (data.entryType === 'METER_READING' && lastEntry && data.value < lastEntry.value) {
-      return NextResponse.json({ 
-        error: 'Zählerstand darf nicht kleiner als der vorherige Wert sein' 
-      }, { status: 400 })
+    if (data.entryType === 'METER_READING') {
+      // Prüfe gegen den chronologisch letzten Eintrag VOR dem neuen Datum
+      const previousEntry = await prisma.meterEntry.findFirst({
+        where: { userId: session.user.id, date: { lt: newDate }, entryType: 'METER_READING' },
+        orderBy: { date: 'desc' }
+      })
+
+      if (previousEntry && data.value < previousEntry.value) {
+        return NextResponse.json({
+          error: 'Zählerstand darf nicht kleiner als der vorherige Wert sein'
+        }, { status: 400 })
+      }
+
+      // Prüfe gegen den chronologisch nächsten Eintrag NACH dem neuen Datum
+      const nextEntry = await prisma.meterEntry.findFirst({
+        where: { userId: session.user.id, date: { gt: newDate }, entryType: 'METER_READING' },
+        orderBy: { date: 'asc' }
+      })
+
+      if (nextEntry && data.value > nextEntry.value) {
+        return NextResponse.json({
+          error: 'Zählerstand darf nicht größer als der nächste Wert sein'
+        }, { status: 400 })
+      }
+
+      // Prüfe auf doppelte Einträge am selben Datum
+      const sameDate = await prisma.meterEntry.findFirst({
+        where: { userId: session.user.id, date: newDate, entryType: 'METER_READING' }
+      })
+
+      if (sameDate) {
+        return NextResponse.json({
+          error: 'Es existiert bereits ein Zählerstand für dieses Datum'
+        }, { status: 400 })
+      }
     }
 
     const entry = await prisma.meterEntry.create({
       data: {
         userId: session.user.id,
-        date: new Date(data.date),
+        date: newDate,
         value: data.value,
         entryType: data.entryType,
         comment: data.comment,

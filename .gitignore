@@ -41,3 +41,7 @@ docker/.env
 *.log
 *.tsbuildinfo
 next-env.d.ts
+
+# Lokale Arbeitsdateien
+Prompt.rtfd/
+Vorlage/

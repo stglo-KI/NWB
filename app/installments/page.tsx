@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { LogOut, User, Plus, Trash2, Gauge, Home } from 'lucide-react'
+import { LogOut, User, Gauge } from 'lucide-react'
 import Link from 'next/link'
 
 interface Installment {
@@ -15,45 +15,42 @@ interface Installment {
   validTo: string | null
 }
 
+interface Tariff {
+  id: string
+  name: string
+  energyPrice: number
+  basePrice: number
+  validFrom: string
+}
+
 export default function InstallmentsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [installments, setInstallments] = useState<Installment[]>([])
+  const [tariff, setTariff] = useState<Tariff | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [newInstallment, setNewInstallment] = useState({ amount: '', validFrom: '' })
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/login')
     } else if (status === 'authenticated') {
-      fetchInstallments()
+      fetchData()
     }
   }, [status, router])
 
-  const fetchInstallments = async () => {
-    const res = await fetch('/api/installments')
-    const data = await res.json()
-    setInstallments(data)
-    setLoading(false)
-  }
-
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const res = await fetch('/api/installments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: parseFloat(newInstallment.amount),
-        validFrom: newInstallment.validFrom,
-      }),
-    })
-
-    if (res.ok) {
-      setShowForm(false)
-      setNewInstallment({ amount: '', validFrom: '' })
-      fetchInstallments()
+  const fetchData = async () => {
+    const [instRes, tariffRes] = await Promise.all([
+      fetch('/api/installments'),
+      fetch('/api/tariffs'),
+    ])
+    const instData = await instRes.json()
+    const tariffData = await tariffRes.json()
+    
+    setInstallments(instData)
+    if (tariffData.length > 0) {
+      setTariff(tariffData[0])
     }
+    setLoading(false)
   }
 
   const currentInstallment = installments.find(i => !i.validTo)
@@ -83,6 +80,26 @@ export default function InstallmentsPage() {
         </div>
       </header>
 
+      {tariff && (
+        <div className="card" style={{ marginBottom: '20px', background: 'rgba(255, 215, 0, 0.1)', border: '1px solid rgba(255, 215, 0, 0.3)' }}>
+          <h3 style={{ color: '#FFD700', marginBottom: '10px' }}>Aktueller Tarif</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px' }}>
+            <div>
+              <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Bezeichnung</div>
+              <div style={{ color: '#e8e8e8', fontWeight: '500' }}>{tariff.name}</div>
+            </div>
+            <div>
+              <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Arbeitspreis</div>
+              <div style={{ color: '#228B22', fontWeight: 'bold', fontSize: '1.2rem' }}>{tariff.energyPrice.toFixed(3)} €/kWh</div>
+            </div>
+            <div>
+              <div style={{ color: '#aaa', fontSize: '0.85rem' }}>Grundpreis</div>
+              <div style={{ color: '#e8e8e8', fontWeight: '500' }}>{tariff.basePrice.toFixed(2)} €/Jahr</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {currentInstallment && (
         <div className="card" style={{ marginBottom: '30px', background: 'linear-gradient(135deg, rgba(34,139,34,0.3), rgba(34,139,34,0.1))' }}>
           <h2 style={{ color: '#90EE90', marginBottom: '15px' }}>Aktueller Abschlag</h2>
@@ -99,50 +116,9 @@ export default function InstallmentsPage() {
       )}
 
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ marginBottom: '20px' }}>
           <h2 style={{ color: '#90EE90' }}>Abschlags-Historie</h2>
-          <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-            <Plus size={18} style={{ marginRight: '8px' }} /> Neuer Abschlag
-          </button>
         </div>
-
-        {showForm && (
-          <form onSubmit={handleAdd} style={{ 
-            background: 'rgba(0,0,0,0.3)', 
-            padding: '20px', 
-            borderRadius: '12px', 
-            marginBottom: '20px',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '15px'
-          }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: '#aaa', fontSize: '0.9rem' }}>Betrag (€)</label>
-              <input 
-                type="number" 
-                step="0.01"
-                className="input-field"
-                value={newInstallment.amount}
-                onChange={(e) => setNewInstallment({ ...newInstallment, amount: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', color: '#aaa', fontSize: '0.9rem' }}>Gültig ab</label>
-              <input 
-                type="date" 
-                className="input-field"
-                value={newInstallment.validFrom}
-                onChange={(e) => setNewInstallment({ ...newInstallment, validFrom: e.target.value })}
-                required
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
-              <button type="submit" className="btn btn-primary">Speichern</button>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Abbrechen</button>
-            </div>
-          </form>
-        )}
 
         <table>
           <thead>

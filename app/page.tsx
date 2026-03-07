@@ -1,10 +1,19 @@
 import Link from 'next/link'
-import { Home, Gauge, Receipt, User, LogIn } from 'lucide-react'
+import { LogIn, Settings } from 'lucide-react'
 
 export default function HomePage() {
   return (
     <div className="container">
-      <header style={{ textAlign: 'center', marginBottom: '40px', marginTop: '60px' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', marginTop: '20px', padding: '0 20px' }}>
+        <div></div>
+        <Link href="/admin" style={{ textDecoration: 'none' }}>
+          <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Settings size={16} /> Admin
+          </button>
+        </Link>
+      </header>
+
+      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
         <div style={{ marginBottom: '20px' }}>
           <img 
             src="/images/Nahwarme Logo-final_weiss-806e5840.webp" 
@@ -22,39 +31,23 @@ export default function HomePage() {
         }}>
           Nahwärme Verbrauchsportal
         </h1>
-        <p style={{ color: '#aaa', fontSize: '1rem' }}>
-          Willkommen bei Ihrem Nahwärme-Verbrauchsmanagement
+        <p style={{ color: '#aaa', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
+          Ihr persönliches Kundenportal zur Verwaltung Ihres Nahwärmeverbrauchs.
         </p>
-      </header>
+      </div>
 
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
         gap: '20px',
-        maxWidth: '1000px',
+        maxWidth: '600px',
         margin: '0 auto'
       }}>
         <Link href="/auth/login" style={{ textDecoration: 'none' }}>
-          <div className="card" style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}>
+          <div className="card" style={{ cursor: 'pointer', transition: 'all 0.3s ease', textAlign: 'center' }}>
             <LogIn size={48} style={{ color: '#FFD700', marginBottom: '15px' }} />
-            <h2 style={{ color: '#FFD700', marginBottom: '10px' }}>Anmelden</h2>
-            <p style={{ color: '#aaa' }}>Zum Kundenportal anmelden</p>
-          </div>
-        </Link>
-
-        <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-          <div className="card" style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}>
-            <Gauge size={48} style={{ color: '#FFD700', marginBottom: '15px' }} />
-            <h2 style={{ color: '#FFD700', marginBottom: '10px' }}>Verbrauch</h2>
-            <p style={{ color: '#aaa' }}>Zählerstände erfassen und Verbrauch anzeigen</p>
-          </div>
-        </Link>
-
-        <Link href="/installments" style={{ textDecoration: 'none' }}>
-          <div className="card" style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}>
-            <Receipt size={48} style={{ color: '#FFD700', marginBottom: '15px' }} />
-            <h2 style={{ color: '#FFD700', marginBottom: '10px' }}>Abschläge</h2>
-            <p style={{ color: '#aaa' }}>Monatliche Abschläge verwalten</p>
+            <h2 style={{ color: '#FFD700', marginBottom: '10px' }}>Kundenportal</h2>
+            <p style={{ color: '#aaa' }}>Anmeldung für Kunden</p>
           </div>
         </Link>
       </div>

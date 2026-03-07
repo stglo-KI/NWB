@@ -25,7 +25,6 @@ export async function POST(request: Request) {
     if (action === 'getUsers') {
       const users = await prisma.user.findMany({
         where: { role: 'USER', status: 'ACTIVE' },
-        include: { profile: true },
         select: {
           id: true,
           email: true,
@@ -33,7 +32,9 @@ export async function POST(request: Request) {
             select: {
               firstName: true,
               lastName: true,
-              address: true,
+              street: true,
+              postalCode: true,
+              city: true,
               customerNumber: true,
             }
           }
