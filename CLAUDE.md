@@ -11,16 +11,29 @@ Nahwärme Verbrauchsportal — a district heating consumption management app wit
 ```bash
 npm run dev              # Dev server on http://localhost:3000
 npm run build            # Production build (use to verify changes compile)
-npx prisma db push       # Push schema changes to SQLite
+npx prisma db push       # Push schema changes to DB (dev)
 npm run db:seed          # Seed with test data (tsx prisma/seed.ts)
 npx prisma studio        # Visual DB browser
 ```
 
 No test suite exists. Verify changes with `npm run build`.
 
+## Docker / Deployment
+
+```bash
+# From repo root (docker-compose.yml is at root, Dockerfile at docker/Dockerfile)
+docker compose up --build
+
+# On first run or after schema changes:
+docker compose exec web npx prisma db push
+docker compose exec web npm run db:seed
+```
+
+Production uses PostgreSQL (via `docker-compose.yml`). Local dev uses SQLite — set `DATABASE_URL=file:./dev.db` and keep `provider = "sqlite"` in `prisma/schema.prisma` locally, but **do not commit sqlite provider** (schema is set to `postgresql` for deployment).
+
 ## Architecture
 
-**Stack**: Next.js 14 (App Router) + TypeScript + Prisma/SQLite + NextAuth (JWT) + Recharts
+**Stack**: Next.js 14 (App Router) + TypeScript + Prisma + NextAuth (JWT) + Recharts. **Dev**: SQLite. **Production**: PostgreSQL (Docker).
 
 **Two user roles with separate UIs:**
 - **USER** — `/dashboard` (charts + meter readings), `/installments`, `/profile`
@@ -49,7 +62,9 @@ No test suite exists. Verify changes with `npm run build`.
 
 ## Environment
 
-Requires `.env` with `DATABASE_URL` (SQLite path like `file:./dev.db`), `NEXTAUTH_SECRET`, `NEXTAUTH_URL`. See `.env.example` (note: example shows PostgreSQL but project uses SQLite).
+**Local dev** — `.env` with `DATABASE_URL=file:./dev.db`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL=http://localhost:3000`.
+
+**Docker prod** — copy `docker/.env` to repo root, set `DB_PASSWORD`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`. The `docker-compose.yml` at repo root reads these vars and constructs the PostgreSQL `DATABASE_URL` automatically.
 
 ## Test Credentials (from seed)
 
