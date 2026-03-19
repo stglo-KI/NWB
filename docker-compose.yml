@@ -25,12 +25,18 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-change-me-in-production}@db:5432/nahwaerme
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-this-secret-in-production}
+      NEXTAUTH_URL: https://nwb.primotus.de
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       N8N_API_KEY: ${N8N_API_KEY:-}
     depends_on:
       db:
         condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nwb.rule=Host(`nwb.primotus.de`)"
+      - "traefik.http.routers.nwb.entrypoints=websecure"
+      - "traefik.http.routers.nwb.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nwb.loadbalancer.server.port=3000"
 
 volumes:
   postgres_data:
